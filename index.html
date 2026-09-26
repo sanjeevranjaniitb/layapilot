@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LayaPilot — Laya Autonomous Driving Demo</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'SF Pro Display',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+    #canvas-wrap{position:fixed;inset:0}
+    canvas{display:block;width:100%!important;height:100%!important}
+
+    /* ── Top bar ── */
+    #topbar{position:fixed;top:0;left:0;right:0;height:48px;background:rgba(0,0,0,.55);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;padding:0 20px;gap:16px;z-index:20}
+    #topbar .logo{font-size:15px;font-weight:700;letter-spacing:.08em;color:#fff}
+    #topbar .logo span{color:#4af}
+    #mode-badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;background:#1a3a1a;color:#4dff88;border:1px solid #2a6a2a;letter-spacing:.06em}
+    #mode-badge.manual{background:#2a1a00;color:#ffaa33;border-color:#664400}
+    #route-label{font-size:12px;color:#888;display:flex;align-items:center;gap:6px}
+    #route-label .arrow{color:#4af}
+    #speed-big{font-size:22px;font-weight:700;color:#fff;margin-left:auto}
+    #speed-big span{font-size:11px;font-weight:400;color:#aaa;margin-left:3px}
+    #dest-info{font-size:12px;color:#aaa}
+
+    /* ── Map button ── */
+    #map-btn{font-size:11px;font-weight:600;padding:4px 12px;border-radius:16px;background:rgba(0,80,200,.3);border:1px solid rgba(0,120,255,.4);color:#4af;cursor:pointer;text-decoration:none;letter-spacing:.04em;white-space:nowrap}
+    #map-btn:hover{background:rgba(0,100,255,.45)}
+
+    /* ── Laya panel ── */
+    #laya-panel{position:fixed;top:60px;right:16px;width:300px;background:rgba(8,12,20,.82);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:16px;z-index:20;color:#fff}
+    .panel-title{font-size:10px;font-weight:700;letter-spacing:.12em;color:#4af;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+    .pulse{width:7px;height:7px;border-radius:50%;background:#4af;animation:pulse 1.2s infinite}
+    @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+
+    .decision-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+    .decision-label{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.06em}
+    .decision-value{font-size:16px;font-weight:700;color:#fff}
+    .decision-value.drive{color:#4dff88}
+    .decision-value.stop{color:#ff4444}
+    .decision-value.left{color:#4af}
+    .decision-value.right{color:#fa4}
+    .decision-value.routing{color:#c8a0ff}
+    .decision-value.routing.alert{color:#ffcc44}
+
+    .section-title{font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.08em;margin:10px 0 6px}
+
+    .bar-row{margin-bottom:6px}
+    .bar-label{display:flex;justify-content:space-between;font-size:11px;color:#aaa;margin-bottom:3px}
+    .bar-label .pct{color:#fff;font-weight:600}
+    .bar-track{height:5px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden}
+    .bar-fill{height:100%;border-radius:3px;transition:width .35s ease}
+    .bar-fill.drive{background:linear-gradient(90deg,#1a8a3a,#4dff88)}
+    .bar-fill.stop{background:linear-gradient(90deg,#8a1a1a,#ff4444)}
+    .bar-fill.straight{background:linear-gradient(90deg,#1a4a8a,#4af)}
+    .bar-fill.left{background:linear-gradient(90deg,#1a6a8a,#4af)}
+    .bar-fill.right{background:linear-gradient(90deg,#8a6a1a,#fa4)}
+
+    .risk-row{display:flex;align-items:center;gap:8px;margin-top:10px}
+    .risk-label{font-size:11px;color:#888;flex:1}
+    .risk-dots{display:flex;gap:3px}
+    .risk-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.12)}
+    .risk-dot.active.r0{background:#4dff88}
+    .risk-dot.active.r1{background:#aaff44}
+    .risk-dot.active.r2{background:#ffcc00}
+    .risk-dot.active.r3{background:#ff8800}
+    .risk-dot.active.r4{background:#ff3333}
+
+    .reasoning-box{margin-top:12px;padding:10px;background:rgba(255,255,255,.04);border-radius:8px;border:1px solid rgba(255,255,255,.06)}
+    .reasoning-text{font-size:11px;color:#ccc;line-height:1.55;white-space:pre-line}
+
+    .latency{font-size:10px;color:#555;margin-top:10px;text-align:right}
+
+    /* ── Mini-map ── */
+    #mini-map-wrap{position:fixed;bottom:70px;left:16px;background:rgba(8,12,20,.85);border:1px solid rgba(255,255,255,.1);border-radius:10px;overflow:hidden;z-index:20}
+    #mini-map{display:block}
+    #mini-map-label{font-size:9px;color:#555;text-align:center;padding:3px 0 4px;letter-spacing:.06em;text-transform:uppercase}
+
+    /* ── Bottom controls ── */
+    #controls{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.5);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:7px 18px;font-size:11px;color:#888;z-index:20;white-space:nowrap}
+    #controls kbd{background:rgba(255,255,255,.1);border-radius:4px;padding:1px 6px;color:#ccc;font-family:inherit}
+
+    /* ── Autopilot button ── */
+    #ap-btn{position:fixed;bottom:52px;left:50%;transform:translateX(-50%);background:rgba(0,100,255,.25);border:1px solid rgba(0,150,255,.5);color:#4af;font-size:13px;font-weight:600;padding:9px 28px;border-radius:24px;cursor:pointer;z-index:20;backdrop-filter:blur(8px);transition:all .2s;letter-spacing:.04em}
+    #ap-btn:hover{background:rgba(0,120,255,.4)}
+    #ap-btn.active{background:rgba(0,180,80,.3);border-color:rgba(0,220,100,.5);color:#4dff88}
+  </style>
+</head>
+<body>
+<div id="canvas-wrap"></div>
+
+<div id="topbar">
+  <div class="logo">LAYA<span>PILOT</span></div>
+  <div id="mode-badge" class="manual">MANUAL</div>
+  <div id="route-label">
+    <span id="route-from">Millbrook</span>
+    <span class="arrow">→</span>
+    <span id="route-to">Cedar Town</span>
+  </div>
+  <a id="map-btn" href="/map.html">⊞ Change Route</a>
+  <div id="dest-info">Destination: Cedar Town</div>
+  <div id="speed-big">0<span>km/h</span></div>
+</div>
+
+<div id="laya-panel">
+  <div class="panel-title"><div class="pulse"></div>Laya Decision Engine</div>
+
+  <div class="decision-row">
+    <div class="decision-label">Motion</div>
+    <div class="decision-value" id="motion-val">—</div>
+  </div>
+  <div class="decision-row">
+    <div class="decision-label">Direction</div>
+    <div class="decision-value" id="dir-val">—</div>
+  </div>
+  <div class="decision-row">
+    <div class="decision-label">Routing</div>
+    <div class="decision-value routing" id="routing-val">—</div>
+  </div>
+
+  <div class="section-title">Motion Confidence</div>
+  <div class="bar-row">
+    <div class="bar-label"><span>Drive</span><span class="pct" id="pct-drive">—</span></div>
+    <div class="bar-track"><div class="bar-fill drive" id="bar-drive" style="width:0%"></div></div>
+  </div>
+  <div class="bar-row">
+    <div class="bar-label"><span>Stop</span><span class="pct" id="pct-stop">—</span></div>
+    <div class="bar-track"><div class="bar-fill stop" id="bar-stop" style="width:0%"></div></div>
+  </div>
+
+  <div class="section-title">Vector Selection</div>
+  <div class="bar-row">
+    <div class="bar-label"><span>Straight</span><span class="pct" id="pct-straight">—</span></div>
+    <div class="bar-track"><div class="bar-fill straight" id="bar-straight" style="width:0%"></div></div>
+  </div>
+  <div class="bar-row">
+    <div class="bar-label"><span>Left</span><span class="pct" id="pct-left">—</span></div>
+    <div class="bar-track"><div class="bar-fill left" id="bar-left" style="width:0%"></div></div>
+  </div>
+  <div class="bar-row">
+    <div class="bar-label"><span>Right</span><span class="pct" id="pct-right">—</span></div>
+    <div class="bar-track"><div class="bar-fill right" id="bar-right" style="width:0%"></div></div>
+  </div>
+
+  <div class="risk-row">
+    <div class="risk-label">Risk Level</div>
+    <div class="risk-dots" id="risk-dots">
+      <div class="risk-dot r0"></div><div class="risk-dot r1"></div>
+      <div class="risk-dot r2"></div><div class="risk-dot r3"></div><div class="risk-dot r4"></div>
+    </div>
+    <div style="font-size:11px;color:#aaa;min-width:60px;text-align:right" id="risk-label">—</div>
+  </div>
+
+  <div class="reasoning-box">
+    <div class="reasoning-text" id="reasoning">Waiting for Laya inference...</div>
+  </div>
+  <div class="latency" id="latency"></div>
+</div>
+
+<!-- Mini-map -->
+<div id="mini-map-wrap">
+  <canvas id="mini-map" width="180" height="160"></canvas>
+  <div id="mini-map-label">Route Map</div>
+</div>
+
+<button id="ap-btn" onclick="toggleAutopilot()">Press J — Enable Laya Autopilot</button>
+<div id="controls">
+  <kbd>W</kbd><kbd>S</kbd><kbd>A</kbd><kbd>D</kbd> Drive &nbsp;·&nbsp;
+  <kbd>J</kbd> Laya Autopilot &nbsp;·&nbsp;
+  <kbd>V</kbd> Camera &nbsp;·&nbsp;
+  <kbd>M</kbd> Map &nbsp;·&nbsp;
+  <kbd>Space</kbd> Brake
+</div>
+
+<script type="module" src="/main.js"></script>
+<script>function toggleAutopilot(){ window._toggleAP && window._toggleAP(); }</script>
+</body>
+</html>

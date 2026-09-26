@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>LayaPilot — Select Route</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; background: #080c14; font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #fff; overflow: hidden; }
+
+    #topbar {
+      position: fixed; top: 0; left: 0; right: 0; height: 52px;
+      background: rgba(0,0,0,.6); backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      display: flex; align-items: center; padding: 0 24px; gap: 16px; z-index: 30;
+    }
+    .logo { font-size: 15px; font-weight: 700; letter-spacing: .08em; }
+    .logo span { color: #4af; }
+    .tagline { font-size: 12px; color: #666; }
+
+    #map-wrap {
+      position: fixed; inset: 52px 320px 0 0;
+      display: flex; align-items: center; justify-content: center;
+      background: #0a0f1a;
+    }
+    canvas { cursor: crosshair; display: block; }
+
+    /* ── Side panel ── */
+    #panel {
+      position: fixed; top: 52px; right: 0; bottom: 0; width: 320px;
+      background: rgba(8,12,20,.95); border-left: 1px solid rgba(255,255,255,.08);
+      padding: 24px 20px; display: flex; flex-direction: column; gap: 20px;
+      overflow-y: auto;
+    }
+    .panel-section { display: flex; flex-direction: column; gap: 10px; }
+    .section-label {
+      font-size: 10px; font-weight: 700; letter-spacing: .12em;
+      color: #4af; text-transform: uppercase;
+    }
+
+    .node-card {
+      background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08);
+      border-radius: 10px; padding: 12px 14px; min-height: 52px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .node-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .node-dot.src { background: #4dff88; }
+    .node-dot.dst { background: #ff6644; }
+    .node-dot.empty { background: rgba(255,255,255,.15); }
+    .node-name { font-size: 13px; font-weight: 600; }
+    .node-hint { font-size: 11px; color: #555; }
+
+    .route-info {
+      background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.06);
+      border-radius: 10px; padding: 12px 14px;
+    }
+    .route-info .ri-row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px; }
+    .route-info .ri-row:last-child { margin-bottom: 0; }
+    .ri-label { color: #666; }
+    .ri-val { color: #fff; font-weight: 600; }
+
+    .road-legend { display: flex; flex-direction: column; gap: 6px; }
+    .legend-row { display: flex; align-items: center; gap: 8px; font-size: 11px; color: #888; }
+    .legend-line { width: 24px; height: 3px; border-radius: 2px; }
+
+    #start-btn {
+      margin-top: auto; padding: 14px; border-radius: 12px; border: none;
+      font-size: 14px; font-weight: 700; letter-spacing: .04em; cursor: pointer;
+      background: linear-gradient(135deg, #0055cc, #0088ff);
+      color: #fff; transition: all .2s; opacity: .4; pointer-events: none;
+    }
+    #start-btn.ready { opacity: 1; pointer-events: all; }
+    #start-btn.ready:hover { background: linear-gradient(135deg, #0066ee, #22aaff); transform: translateY(-1px); }
+
+    #hint {
+      font-size: 11px; color: #444; text-align: center; line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+
+<div id="topbar">
+  <div class="logo">LAYA<span>PILOT</span></div>
+  <div class="tagline">Route Planner — Select source and destination on the map</div>
+</div>
+
+<div id="map-wrap"><canvas id="map"></canvas></div>
+
+<div id="panel">
+  <div class="panel-section">
+    <div class="section-label">Origin</div>
+    <div class="node-card" id="src-card">
+      <div class="node-dot empty" id="src-dot"></div>
+      <div>
+        <div class="node-name" id="src-name">Not selected</div>
+        <div class="node-hint">Click a node on the map</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel-section">
+    <div class="section-label">Destination</div>
+    <div class="node-card" id="dst-card">
+      <div class="node-dot empty" id="dst-dot"></div>
+      <div>
+        <div class="node-name" id="dst-name">Not selected</div>
+        <div class="node-hint">Click a second node on the map</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel-section" id="route-section" style="display:none">
+    <div class="section-label">Planned Route</div>
+    <div class="route-info">
+      <div class="ri-row"><span class="ri-label">Distance</span><span class="ri-val" id="ri-dist">—</span></div>
+      <div class="ri-row"><span class="ri-label">Road types</span><span class="ri-val" id="ri-types">—</span></div>
+      <div class="ri-row"><span class="ri-label">Waypoints</span><span class="ri-val" id="ri-nodes">—</span></div>
+      <div class="ri-row"><span class="ri-label">Laya decisions</span><span class="ri-val" id="ri-junctions">—</span></div>
+    </div>
+  </div>
+
+  <div class="panel-section">
+    <div class="section-label">Map Legend</div>
+    <div class="road-legend">
+      <div class="legend-row"><div class="legend-line" style="background:#4a6fa5;height:5px"></div>Interstate highway</div>
+      <div class="legend-row"><div class="legend-line" style="background:#5a7a5a"></div>On-ramp / off-ramp</div>
+      <div class="legend-row"><div class="legend-line" style="background:#7a6a4a"></div>Town streets</div>
+      <div class="legend-row"><div class="legend-line" style="background:#4dff88;border-radius:50%;width:10px;height:10px"></div>Origin node</div>
+      <div class="legend-row"><div class="legend-line" style="background:#ff6644;border-radius:50%;width:10px;height:10px"></div>Destination node</div>
+      <div class="legend-row"><div class="legend-line" style="background:#fff;border-radius:50%;width:8px;height:8px"></div>Junction / waypoint</div>
+    </div>
+  </div>
+
+  <div id="hint">Click any node to set origin.<br>Click another to set destination.<br>Laya will navigate in real time.</div>
+
+  <button id="start-btn" onclick="startDrive()">Start Laya Autopilot →</button>
+</div>
+
+<script type="module">
+import { generateHighway, makeHighwayRoute } from "./highway.js";
+import { findRoute, reachableFrom } from "./router.js";
+
+const world = generateHighway(42, { limit: 28, name: "Highway" });
+const canvas = document.getElementById("map");
+const ctx = canvas.getContext("2d");
+
+// ── Layout ────────────────────────────────────────────────────────────────────
+const PADDING = 40;
+let W, H, scaleX, scaleY, offX, offZ;
+
+function layout() {
+  const wrap = document.getElementById("map-wrap");
+  W = wrap.clientWidth; H = wrap.clientHeight;
+  canvas.width = W; canvas.height = H;
+  const bx = world.bounds.maxX - world.bounds.minX;
+  const bz = world.bounds.maxZ - world.bounds.minZ;
+  const s = Math.min((W - PADDING * 2) / bx, (H - PADDING * 2) / bz);
+  scaleX = s; scaleY = s;
+  offX = (W - bx * s) / 2 - world.bounds.minX * s;
+  offZ = (H - bz * s) / 2 - world.bounds.minZ * s;
+  draw();
+}
+
+const tx = (x) => x * scaleX + offX;
+const tz = (z) => z * scaleY + offZ;
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let srcId = null, dstId = null, routeIds = null, routeObj = null;
+let hoverNodeId = null;
+
+// ── Drawing ───────────────────────────────────────────────────────────────────
+const ROAD_COLORS = {
+  interstate: "#3a5a8a", onramp: "#4a6a4a", merge: "#4a6a4a",
+  exit: "#4a6a4a", offramp: "#4a6a4a", local: "#6a5a3a", town: "#6a5a3a",
+  ramp_turn: "#5a5a3a",
+};
+
+function drawPolyline(pts, color, width) {
+  if (!pts?.length) return;
+  ctx.beginPath();
+  ctx.moveTo(tx(pts[0].x), tz(pts[0].z));
+  for (let i = 1; i < pts.length; i++) ctx.lineTo(tx(pts[i].x), tz(pts[i].z));
+  ctx.strokeStyle = color; ctx.lineWidth = width; ctx.stroke();
+}
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+
+  // Background
+  ctx.fillStyle = "#0a0f1a";
+  ctx.fillRect(0, 0, W, H);
+
+  // Grid (subtle)
+  ctx.strokeStyle = "rgba(255,255,255,.03)"; ctx.lineWidth = 1;
+  for (let x = 0; x < W; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+  for (let z = 0; z < H; z += 40) { ctx.beginPath(); ctx.moveTo(0, z); ctx.lineTo(W, z); ctx.stroke(); }
+
+  // Roads — connector roads first (town streets)
+  for (const road of world.connectorRoads) {
+    const color = ROAD_COLORS[road.kind] ?? "#555";
+    drawPolyline(road.points, color, Math.max(1.5, road.width * scaleX * 0.35));
+  }
+
+  // Interstate main road
+  drawPolyline(world.roadSamples, ROAD_COLORS.interstate, Math.max(3, 25 * scaleX * 0.35));
+
+  // Connector road edges (edge paths from edges with .path)
+  for (const edge of world.edges) {
+    if (!edge.path) continue;
+    const color = ROAD_COLORS[edge.kind] ?? "#555";
+    drawPolyline(edge.path, color, Math.max(1.5, (edge.width ?? 6) * scaleX * 0.35));
+  }
+
+  // Highlighted route
+  if (routeObj) {
+    ctx.setLineDash([]);
+    drawPolyline(routeObj.points, "rgba(64,170,255,0.25)", 8);
+    drawPolyline(routeObj.points, "#4af", 2.5);
+  }
+
+  // Buildings (tiny dots)
+  for (const obj of world.objects.filter(o => o.type === "building")) {
+    ctx.fillStyle = "rgba(255,255,255,.06)";
+    ctx.fillRect(tx(obj.x) - 2, tz(obj.z) - 2, 4, 4);
+  }
+
+  // Nodes
+  const reachable = srcId ? new Set(reachableFrom(world, srcId)) : null;
+
+  for (const node of world.nodes) {
+    const x = tx(node.x), z = tz(node.z);
+    const isSrc = node.id === srcId;
+    const isDst = node.id === dstId;
+    const isHover = node.id === hoverNodeId;
+    const isOnRoute = routeIds?.includes(node.id);
+    const isReachable = !srcId || reachable?.has(node.id);
+
+    let r = 4, color = "rgba(255,255,255,.35)";
+    if (isSrc) { r = 7; color = "#4dff88"; }
+    else if (isDst) { r = 7; color = "#ff6644"; }
+    else if (isOnRoute) { r = 5; color = "#4af"; }
+    else if (isHover) { r = 6; color = "#fff"; }
+    else if (!isReachable) { color = "rgba(255,255,255,.1)"; }
+
+    // Glow for src/dst
+    if (isSrc || isDst) {
+      ctx.beginPath(); ctx.arc(x, z, r + 5, 0, Math.PI * 2);
+      ctx.fillStyle = isSrc ? "rgba(77,255,136,.15)" : "rgba(255,102,68,.15)";
+      ctx.fill();
+    }
+
+    ctx.beginPath(); ctx.arc(x, z, r, 0, Math.PI * 2);
+    ctx.fillStyle = color; ctx.fill();
+
+    // Label for named nodes
+    const label = nodeLabel(node.id);
+    if (label && (isSrc || isDst || isOnRoute || isHover)) {
+      ctx.font = `${isSrc || isDst ? "bold " : ""}10px -apple-system, sans-serif`;
+      ctx.fillStyle = isSrc ? "#4dff88" : isDst ? "#ff6644" : "#aaa";
+      ctx.fillText(label, x + 8, z + 4);
+    }
+  }
+}
+
+function nodeLabel(id) {
+  const labels = {
+    "local-start": "Millbrook Start", "mill-market": "Market St",
+    "mill-interchange": "Interchange", "onramp": "On-Ramp",
+    "mill-north": "North St", "mill-south": "South St",
+    "oak-south": "Oak South", "oak-market": "Oak Market",
+    "oak-interchange": "Oak Interchange", "oak-north": "Oak North",
+    "market-west": "Market West", "market-east": "Market East",
+    "merge-lane": "Merge Lane", "exit-cedar": "Cedar Exit",
+    "cedar-town": "Cedar Town", "cedar-stop": "Cedar Station",
+    "h0": "H0", "h1": "H1", "h2": "H2", "h3": "H3",
+    "h4": "H4", "h5": "H5", "h6": "H6", "h7": "H7", "h8": "H8",
+  };
+  return labels[id] ?? id;
+}
+
+// ── Interaction ───────────────────────────────────────────────────────────────
+function nearestNode(mx, my, threshold = 18) {
+  let best = null, bestD = threshold;
+  for (const node of world.nodes) {
+    const d = Math.hypot(tx(node.x) - mx, tz(node.z) - my);
+    if (d < bestD) { bestD = d; best = node.id; }
+  }
+  return best;
+}
+
+canvas.addEventListener("mousemove", (e) => {
+  const r = canvas.getBoundingClientRect();
+  const id = nearestNode(e.clientX - r.left, e.clientY - r.top);
+  if (id !== hoverNodeId) { hoverNodeId = id; draw(); }
+  canvas.style.cursor = id ? "pointer" : "crosshair";
+});
+
+canvas.addEventListener("click", (e) => {
+  const r = canvas.getBoundingClientRect();
+  const id = nearestNode(e.clientX - r.left, e.clientY - r.top);
+  if (!id) return;
+
+  if (!srcId) {
+    srcId = id;
+  } else if (!dstId && id !== srcId) {
+    dstId = id;
+    computeRoute();
+  } else {
+    // Reset and start over
+    srcId = id; dstId = null; routeIds = null; routeObj = null;
+    updatePanel();
+  }
+  updatePanel();
+  draw();
+});
+
+function computeRoute() {
+  routeIds = findRoute(world, srcId, dstId);
+  if (routeIds && routeIds.length >= 2) {
+    try {
+      routeObj = makeHighwayRoute(world, routeIds);
+    } catch (err) {
+      console.warn("Route geometry failed:", err.message);
+      routeObj = null;
+    }
+  } else {
+    routeIds = null; routeObj = null;
+  }
+}
+
+function updatePanel() {
+  const srcDot = document.getElementById("src-dot");
+  const dstDot = document.getElementById("dst-dot");
+  const srcName = document.getElementById("src-name");
+  const dstName = document.getElementById("dst-name");
+  const routeSection = document.getElementById("route-section");
+  const startBtn = document.getElementById("start-btn");
+
+  if (srcId) {
+    srcDot.className = "node-dot src";
+    srcName.textContent = nodeLabel(srcId);
+  } else {
+    srcDot.className = "node-dot empty";
+    srcName.textContent = "Not selected";
+  }
+
+  if (dstId) {
+    dstDot.className = "node-dot dst";
+    dstName.textContent = nodeLabel(dstId);
+  } else {
+    dstDot.className = "node-dot empty";
+    dstName.textContent = "Not selected";
+  }
+
+  if (routeObj) {
+    routeSection.style.display = "";
+    const distKm = (routeObj.length / 1000).toFixed(2);
+    const types = [...new Set(routeObj.sections.map(s => s.kind))].join(", ");
+    const junctions = routeObj.crossings?.length ?? 0;
+    document.getElementById("ri-dist").textContent = `${distKm} km`;
+    document.getElementById("ri-types").textContent = types;
+    document.getElementById("ri-nodes").textContent = routeIds.length;
+    document.getElementById("ri-junctions").textContent = `${junctions} junction${junctions !== 1 ? "s" : ""}`;
+    startBtn.className = "ready";
+  } else if (srcId && dstId) {
+    routeSection.style.display = "";
+    document.getElementById("ri-dist").textContent = "No route found";
+    startBtn.className = "";
+  } else {
+    routeSection.style.display = "none";
+    startBtn.className = "";
+  }
+}
+
+window.startDrive = function () {
+  if (!routeIds || !routeObj) return;
+  sessionStorage.setItem("lp_route_ids", JSON.stringify(routeIds));
+  sessionStorage.setItem("lp_src_label", nodeLabel(srcId));
+  sessionStorage.setItem("lp_dst_label", nodeLabel(dstId));
+  window.location.href = "/";
+};
+
+window.addEventListener("resize", layout);
+layout();
+</script>
+</body>
+</html>

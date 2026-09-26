@@ -1,0 +1,159 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 920" width="800" height="920"
+     font-family="'SF Pro Display','Helvetica Neue',system-ui,sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#080c14"/>
+      <stop offset="100%" stop-color="#0b1020"/>
+    </linearGradient>
+
+    <!-- block fills -->
+    <linearGradient id="gSim"  x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0e1e38"/><stop offset="100%" stop-color="#091628"/></linearGradient>
+    <linearGradient id="gApi"  x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0e1e38"/><stop offset="100%" stop-color="#091628"/></linearGradient>
+    <linearGradient id="gLaya" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0a2218"/><stop offset="100%" stop-color="#061810"/></linearGradient>
+    <linearGradient id="gDec"  x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#160e28"/><stop offset="100%" stop-color="#0e0820"/></linearGradient>
+    <linearGradient id="gCtrl" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#1a1608"/><stop offset="100%" stop-color="#120e04"/></linearGradient>
+
+    <!-- glow filter for Laya -->
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="8" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+
+    <!-- arrows -->
+    <marker id="arr" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+      <path d="M0,1 L6,3.5 L0,6 Z" fill="#334466"/>
+    </marker>
+    <marker id="arrG" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+      <path d="M0,1 L6,3.5 L0,6 Z" fill="#1a5c38"/>
+    </marker>
+  </defs>
+
+  <!-- background -->
+  <rect width="800" height="920" fill="url(#bg)"/>
+
+  <!-- ── title ── -->
+  <text x="400" y="48" text-anchor="middle" fill="#e8f0ff" font-size="20" font-weight="700" letter-spacing="6">LAYAPILOT</text>
+  <text x="400" y="68" text-anchor="middle" fill="#3a6aaa" font-size="10" letter-spacing="4">OFFLINE AI · REAL-TIME AUTONOMOUS DRIVING</text>
+
+  <!-- ═══════════════════════════════════════════
+       BLOCK 1 — Simulation
+  ════════════════════════════════════════════ -->
+  <rect x="80" y="96" width="640" height="80" rx="8" fill="url(#gSim)" stroke="#1e3a6a" stroke-width="1"/>
+  <rect x="80" y="96" width="3" height="80" rx="1.5" fill="#3a7adf"/>
+  <text x="116" y="126" fill="#3a7adf" font-size="9" letter-spacing="3" font-weight="600">SIMULATION</text>
+  <text x="116" y="150" fill="#c8d8f0" font-size="16" font-weight="600">Three.js World</text>
+  <text x="116" y="168" fill="#4a6a9a" font-size="11">highway.js · scene.js · 1,480 m road network · ~60 fps</text>
+
+  <!-- connector -->
+  <line x1="400" y1="176" x2="400" y2="206" stroke="#1e3a6a" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- ═══════════════════════════════════════════
+       BLOCK 2 — State Vector (pill)
+  ════════════════════════════════════════════ -->
+  <rect x="200" y="210" width="400" height="44" rx="22" fill="#0a1428" stroke="#1e3a6a" stroke-width="1" stroke-dasharray="5,3"/>
+  <text x="400" y="228" text-anchor="middle" fill="#3a6aaa" font-size="9" letter-spacing="3">STATE VECTOR · JSON · ~500 B</text>
+  <text x="400" y="246" text-anchor="middle" fill="#5a8acc" font-size="10">speed · lane offset · heading · curvature · road type · 8 waypoints</text>
+
+  <!-- connector -->
+  <line x1="400" y1="254" x2="400" y2="284" stroke="#1e3a6a" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- ═══════════════════════════════════════════
+       BLOCK 3 — FastAPI
+  ════════════════════════════════════════════ -->
+  <rect x="80" y="288" width="640" height="72" rx="8" fill="url(#gApi)" stroke="#1e3a6a" stroke-width="1"/>
+  <rect x="80" y="288" width="3" height="72" rx="1.5" fill="#3a7adf"/>
+  <text x="116" y="314" fill="#3a7adf" font-size="9" letter-spacing="3" font-weight="600">INFERENCE SERVER</text>
+  <text x="116" y="338" fill="#c8d8f0" font-size="16" font-weight="600">FastAPI · laya_server.py</text>
+  <text x="116" y="354" fill="#4a6a9a" font-size="11">POST /decide · port 8001 · uvicorn · CORS</text>
+
+  <!-- connector -->
+  <line x1="400" y1="360" x2="400" y2="390" stroke="#1a5c38" stroke-width="1.5" marker-end="url(#arrG)"/>
+
+  <!-- ═══════════════════════════════════════════
+       BLOCK 4 — Laya  (hero block)
+  ════════════════════════════════════════════ -->
+  <rect x="60" y="394" width="680" height="96" rx="10" fill="url(#gLaya)" stroke="#1a6a3a" stroke-width="1.5" filter="url(#glow)"/>
+  <rect x="60" y="394" width="3" height="96" rx="1.5" fill="#2adf7a"/>
+
+  <text x="100" y="424" fill="#2adf7a" font-size="9" letter-spacing="3" font-weight="600">AI DECISION ENGINE · APPLE MPS · FULLY OFFLINE</text>
+  <text x="100" y="452" fill="#e8fff4" font-size="20" font-weight="700">Laya  ·  convaiinnovations/laya</text>
+  <text x="100" y="472" fill="#4aaa74" font-size="11">Non-autoregressive classifier · single forward pass · 80–140 ms · 2 Hz</text>
+  <text x="100" y="488" fill="#4aaa74" font-size="11">Choice + probability distribution · no token generation · no cloud</text>
+
+  <!-- connector -->
+  <line x1="400" y1="490" x2="400" y2="520" stroke="#5a2a9a" stroke-width="1.5"/>
+  <defs>
+    <marker id="arrP" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+      <path d="M0,1 L6,3.5 L0,6 Z" fill="#5a2a9a"/>
+    </marker>
+  </defs>
+  <line x1="400" y1="490" x2="400" y2="520" stroke="#5a2a9a" stroke-width="1.5" marker-end="url(#arrP)"/>
+
+  <!-- ═══════════════════════════════════════════
+       BLOCK 5 — 4 Decisions
+  ════════════════════════════════════════════ -->
+  <rect x="80" y="524" width="640" height="168" rx="8" fill="url(#gDec)" stroke="#3a1a6a" stroke-width="1"/>
+  <rect x="80" y="524" width="3" height="168" rx="1.5" fill="#9a5adf"/>
+  <text x="116" y="550" fill="#9a5adf" font-size="9" letter-spacing="3" font-weight="600">4 PARALLEL DECISIONS · SINGLE FORWARD PASS</text>
+
+  <!-- row 1 steering -->
+  <rect x="104" y="558" width="596" height="28" rx="5" fill="#1a0e30" opacity="0.8"/>
+  <text x="124" y="577" fill="#c084fc" font-size="12" font-weight="600">STEERING</text>
+  <text x="230" y="577" fill="#7a5aaa" font-size="10">5 choices</text>
+  <text x="310" y="577" fill="#d4b8f0" font-size="11">hard_left · left · straight · right · hard_right</text>
+
+  <!-- row 2 speed -->
+  <rect x="104" y="592" width="596" height="28" rx="5" fill="#0e1428" opacity="0.8"/>
+  <text x="124" y="611" fill="#60a5fa" font-size="12" font-weight="600">SPEED</text>
+  <text x="230" y="611" fill="#3a5a8a" font-size="10">4 choices</text>
+  <text x="310" y="611" fill="#bfdbfe" font-size="11">accelerate · maintain · slow_slightly · brake</text>
+
+  <!-- row 3 routing -->
+  <rect x="104" y="626" width="596" height="28" rx="5" fill="#1a0e30" opacity="0.8"/>
+  <text x="124" y="645" fill="#34d399" font-size="12" font-weight="600">ROUTING</text>
+  <text x="230" y="645" fill="#1a5a3a" font-size="10">5 choices</text>
+  <text x="310" y="645" fill="#a7f3d0" font-size="11">follow_route · prepare_turn · take_exit · merge · prepare_stop</text>
+
+  <!-- row 4 risk -->
+  <rect x="104" y="660" width="596" height="28" rx="5" fill="#0e1428" opacity="0.8"/>
+  <text x="124" y="679" fill="#fb923c" font-size="12" font-weight="600">RISK</text>
+  <text x="230" y="679" fill="#6a3a1a" font-size="10">0 – 4 score</text>
+  <text x="310" y="679" fill="#fed7aa" font-size="11">safe · low · moderate · high · critical</text>
+
+  <!-- connector -->
+  <line x1="400" y1="692" x2="400" y2="722" stroke="#5a4a1a" stroke-width="1.5"/>
+  <defs>
+    <marker id="arrA" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+      <path d="M0,1 L6,3.5 L0,6 Z" fill="#c09a30"/>
+    </marker>
+  </defs>
+  <line x1="400" y1="692" x2="400" y2="722" stroke="#c09a30" stroke-width="1.5" marker-end="url(#arrA)"/>
+
+  <!-- ═══════════════════════════════════════════
+       BLOCK 6 — Vehicle Controller
+  ════════════════════════════════════════════ -->
+  <rect x="80" y="726" width="640" height="80" rx="8" fill="url(#gCtrl)" stroke="#4a3a0a" stroke-width="1"/>
+  <rect x="80" y="726" width="3" height="80" rx="1.5" fill="#d4a020"/>
+  <text x="116" y="752" fill="#d4a020" font-size="9" letter-spacing="3" font-weight="600">VEHICLE CONTROLLER · ~60 Hz</text>
+  <text x="116" y="776" fill="#f0e0b0" font-size="16" font-weight="600">planning.js</text>
+  <text x="116" y="796" fill="#8a7a3a" font-size="11">maneuverSteering() · physics() · kinematic braking  √(2 × 4.5 × d)  from 60 m</text>
+
+  <!-- connector -->
+  <line x1="400" y1="806" x2="400" y2="836" stroke="#1e3a6a" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- ═══════════════════════════════════════════
+       BLOCK 7 — Renderer / HUD
+  ════════════════════════════════════════════ -->
+  <rect x="80" y="840" width="640" height="56" rx="8" fill="url(#gSim)" stroke="#1e3a6a" stroke-width="1"/>
+  <rect x="80" y="840" width="3" height="56" rx="1.5" fill="#3a7adf"/>
+  <text x="116" y="862" fill="#3a7adf" font-size="9" letter-spacing="3" font-weight="600">RENDER · HUD</text>
+  <text x="116" y="884" fill="#c8d8f0" font-size="14" font-weight="600">scene.js · ~60 fps · PBR · follow / hood cameras · live probability HUD</text>
+
+  <!-- feedback arc -->
+  <path d="M720,868 Q760,868 760,490 Q760,136 720,136" fill="none" stroke="#1e3a6a" stroke-width="1" stroke-dasharray="4,5" opacity="0.35"/>
+  <polygon points="720,130 727,140 713,140" fill="#1e3a6a" opacity="0.35"/>
+
+  <!-- footer -->
+  <line x1="80" y1="910" x2="720" y2="910" stroke="#1e3a6a" stroke-width="0.5" opacity="0.4"/>
+  <text x="400" y="920" text-anchor="middle" fill="#2a4a7a" font-size="9" letter-spacing="3">convaiinnovations/laya · Apple MPS · FastAPI · Three.js · Vite</text>
+</svg>
