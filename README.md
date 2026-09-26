@@ -2,6 +2,8 @@
 
 A real-time autonomous driving simulator running a fully offline, open-source AI decision engine on Apple Silicon. Built as a vertical prototype of a JEVPilot-style system - structured world state in, typed driving decisions out, at awesome inference frequency.
 
+[Watch Demo Here](https://www.youtube.com/watch?v=cARKE6S4AXk)
+
 ---
 
 ## What This Is ?
