@@ -4,6 +4,7 @@ A real-time autonomous driving simulator running a fully offline, open-source AI
 
 [Watch Demo Here](https://www.youtube.com/watch?v=cARKE6S4AXk)
 
+![alt text](hqdefault.jpg)
 ---
 
 ## What This Is ?
